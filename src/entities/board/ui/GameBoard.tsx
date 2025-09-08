@@ -3,17 +3,13 @@ import type { Board, Coord, Direction } from '@entities/board/model/types';
 import type { Move } from '@shared/lib/game/types';
 import { tileClasses, digitColorClass } from '@shared/ui/tileClasses';
 
-/* --- Utility: snap values to device pixels for crisp animations --- */
-const snapPx = (v: number) => {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(v * dpr) / dpr;
-};
-
-/* --- Utility: convert row/col into pixel transform string --- */
+/* --- Utility: convert row/col into pixel transform string.
+   IMPORTANT: use exact fractional values (no device-pixel snapping) so
+   animation coordinates match CSS Grid positions on mobile screens. --- */
 const toPxTransform = (r: number, c: number, tile: number, gap: number) => {
   const step = tile + gap;
-  const x = snapPx(c * step);
-  const y = snapPx(r * step);
+  const x = c * step;
+  const y = r * step;
   return `translate3d(${x}px, ${y}px, 0)`;
 };
 
@@ -27,12 +23,11 @@ function AnimatedTile({ move, tile, gap }: { move: Move; tile: number; gap: numb
   const [transform, setTransform] = useState(from);
 
   useEffect(() => {
-    // Reset animation before starting
     setRun(false);
     setTransform(from);
 
     const node = elRef.current;
-    if (node) void node.getBoundingClientRect(); // force layout flush
+    if (node) void node.getBoundingClientRect();
 
     // Start animation on the next frame
     const id1 = requestAnimationFrame(() => {
@@ -98,10 +93,10 @@ export function GameBoard(props: {
   }>({ id: null, sx: 0, sy: 0, t0: 0, handled: false });
 
   // Swipe thresholds
-  const BASE_PX = 18; // Minimum px threshold
-  const PCT_OF_STAGE = 0.06; // % of stage width threshold
-  const AXIS_RATIO = 1.25; // How much one axis must dominate
-  const MIN_VELOCITY = 0.35; // px/ms required for fast flick
+  const BASE_PX = 18;
+  const PCT_OF_STAGE = 0.06;
+  const AXIS_RATIO = 1.25;
+  const MIN_VELOCITY = 0.35;
 
   const getThreshold = () => {
     const w = stageRef.current?.offsetWidth ?? sizes.tile * 4 + sizes.gap * 3;
@@ -124,15 +119,13 @@ export function GameBoard(props: {
     const dy = e.clientY - p.sy;
 
     if (!p.axis) {
-      // Decide which axis is dominant
       const ax = Math.abs(dx),
         ay = Math.abs(dy);
-      const thr = getThreshold() * 0.5; // early detection threshold
+      const thr = getThreshold() * 0.5;
       if (ax < thr && ay < thr) return;
       p.axis = ax > ay * AXIS_RATIO ? 'x' : ay > ax * AXIS_RATIO ? 'y' : undefined;
     }
 
-    // Block native scroll when axis is chosen
     if (p.axis) e.preventDefault();
   };
 
@@ -173,14 +166,13 @@ export function GameBoard(props: {
     if (dir) {
       e.preventDefault();
       p.handled = true;
-      onKeyDir(dir); // Call game move handler
+      onKeyDir(dir);
     }
 
     // Reset pointer state
     pointer.current = { id: null, sx: 0, sy: 0, t0: 0, handled: false };
   };
 
-  /* --- Calculate pixel size of stage for animation layer --- */
   const stagePx = sizes.tile * 4 + sizes.gap * 3;
 
   return (
