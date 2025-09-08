@@ -1,69 +1,132 @@
-# React + TypeScript + Vite
+# 2048 Game (React + TypeScript + Tailwind)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern implementation of the classic **2048 puzzle game**, built with **React, TypeScript, and TailwindCSS**.  
+Supports multiple players, persistent saves, animations, responsive design, and theme switching.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🎮 Features
 
-## Expanding the ESLint configuration
+- **Classic 2048 Mechanics**
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+  - Slide tiles with **arrow keys** or **swipes (mobile)**.
+  - Matching tiles merge into the sum (2 + 2 → 4).
+  - The goal: reach **2048** — but you can continue to chase higher scores.
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Player Profiles**
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+  - Create, rename, delete multiple players.
+  - Each player has an independent save (board, score, best score, undo history).
+  - Switch between players without losing progress.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- **Persistent Storage**
+
+  - State is saved in **localStorage**:
+    - Board
+    - Score
+    - Best score
+    - Undo history
+    - Theme preference
+  - Progress is **not lost** after reload.
+
+- **Undo System**
+
+  - Roll back up to **3 moves**.
+
+- **Continue After 2048**
+
+  - When you reach 2048, you see a one-time modal with "Continue" / "New Game".
+  - Continue allows playing beyond 2048 (4096, 8192…).
+
+- **Animations**
+
+  - Smooth tile movement animations.
+  - Spawn animation for new tiles.
+  - Merge animations.
+
+- **Themes**
+
+  - Light / Dark mode toggle (global).
+  - Menu and all UI elements adapt automatically.
+
+- **Responsive UI**
+  - Board scales with screen width (desktop, tablet, mobile).
+  - Font size adjusts to tile size.
+  - Controls rearrange:
+    - **Grid layout** on small screens.
+    - **Inline layout** on larger screens.
+
+---
+
+## 🛠 Technologies Used
+
+- **React 18** — UI library
+- **TypeScript** — type safety
+- **Vite** — fast build & dev server
+- **TailwindCSS v4** — styling & responsive design
+- **PostCSS + Autoprefixer** — CSS tooling
+- **Vitest** — unit testing (movement logic, merge rules)
+- **ESLint + Prettier** — linting & formatting
+
+---
+
+## ⚙️ Installation & Setup
+
+Clone repo and install dependencies:
+
+```bash
+git clone https://github.com/your-username/2048-react-ts.git
+cd 2048-react-ts
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Start dev server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Build for production:
+
+```bash
+npm run build
+npm run preview
+```
+
+Run tests:
+
+```bash
+npm run test
+```
+
+---
+
+## 🧪 Tests
+
+- **Movement Logic**
+  - `moveLeft`, `moveRight`, `moveUp`, `moveDown` tested with multiple scenarios.
+  - Verifies merges, no double merges, gained score.
+- **Board State**
+  - Detects `hasMoves`, `maxTile`.
+- **Undo**
+  - Ensures rollback works correctly up to 3 steps.
+
+---
+
+## 📱 Responsive Design
+
+- Tile size adapts via CSS variables:
+  - Desktop: 96px
+  - Tablet: 76–88px
+  - Mobile: 56–64px
+- Font scales with tile size.
+- Controls switch from **row** to **grid** on mobile.
+
+---
+
+## 👨‍💻 Author
+
+Developed by **Denys Shevchenko** as a portfolio project.  
+Perfect for demonstrating **React + TypeScript + Tailwind** skills and clean architecture.
+
+---
