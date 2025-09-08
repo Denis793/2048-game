@@ -15,24 +15,7 @@ export function HomePage() {
       <div className="w-full max-w-[520px] flex flex-col items-center">
         {/* Header: stack on mobile, row on sm+ */}
         <div className="w-full mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-            {/* Title/Subtitle */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-4xl font-black tracking-tight">2048</h1>
-              <p className="text-xs text-neutral-600 dark:text-neutral-300">Use Arrow keys or swipe</p>
-              {current && (
-                <div className="text-xs mt-1 text-neutral-500 dark:text-neutral-400 truncate">
-                  Player: <span className="font-semibold">{current.name}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Counters: on mobile go full width side-by-side */}
-            <div className="grid grid-cols-2 gap-2 sm:flex">
-              <Counter label="SCORE" value={game.score} />
-              <Counter label="BEST" value={game.best} />
-            </div>
-          </div>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3"></div>
         </div>
 
         {/* Controls: grid on mobile, row on sm+ */}
@@ -76,6 +59,21 @@ export function HomePage() {
           />
         </div>
 
+        {/* Title/Subtitle */}
+        <div className="flex-1 min-w-0 py-4">
+          <h1 className="text-4xl font-black tracking-tight">2048</h1>
+          <p className="text-xs text-neutral-600 dark:text-neutral-300">Use Arrow keys or swipe</p>
+          {current && (
+            <div className="text-xs mt-1 text-neutral-500 dark:text-neutral-400 truncate">
+              Player: <span className="font-semibold">{current.name}</span>
+            </div>
+          )}
+        </div>
+        {/* Counters: on mobile go full width side-by-side */}
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Counter label="SCORE" value={game.score} />
+          <Counter label="BEST" value={game.best} />
+        </div>
         <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-300 text-center">
           Tip: keep the highest tile in a corner and avoid breaking your main line.
         </p>
