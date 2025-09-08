@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* ========== Base (light/dark) ========== */
+/* Light/Dark base */
 @layer base {
   html,
   body,
@@ -16,7 +16,7 @@
   }
 }
 
-/* ========== Components ========== */
+/* Components */
 @layer components {
   .card {
     @apply rounded-2xl shadow p-4
@@ -39,9 +39,8 @@
   }
 }
 
-/* ========== Utilities ========== */
+/* === Responsive board sizing & number styling === */
 @layer utilities {
-  /* ---- Responsive sizing via CSS variables ---- */
   :root {
     --tile: 96px;
     --gap: 12px;
@@ -71,37 +70,19 @@
     }
   }
 
-  /* ---- Stage (board + animation layer) ---- */
+  /* Optional: exact-sized stage for board + animation layer */
   .board-stage {
     position: relative;
     width: calc(4 * var(--tile) + 3 * var(--gap));
     height: calc(4 * var(--tile) + 3 * var(--gap));
-    touch-action: none; /* prevent page scroll while swiping on board */
   }
 
-  /* Mobile: stage fills almost full width; recompute --tile locally */
-  @media (max-width: 520px) {
-    .board-stage {
-      --stage: min(92vw, 520px);
-      --tile: calc((var(--stage) - 3 * var(--gap)) / 4);
-      width: var(--stage);
-      height: var(--stage);
-    }
-  }
-
-  /* ---- Grid / tiles ---- */
+  /* Board width exactly fits tiles + gaps */
   .board {
     display: inline-grid;
     grid-template-columns: repeat(4, var(--tile));
     gap: var(--gap);
     width: calc(4 * var(--tile) + 3 * var(--gap));
-  }
-  /* On mobile stage we already set width; use fractions to avoid rounding gaps */
-  @media (max-width: 520px) {
-    .board {
-      width: 100%;
-      grid-template-columns: repeat(4, 1fr);
-    }
   }
 
   .tile {
@@ -109,7 +90,7 @@
     height: var(--tile);
   }
 
-  /* ---- Number text shadows ---- */
+  /* Text shadow utilities (for digits) */
   .text-shadow-sm {
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
   }
@@ -120,7 +101,7 @@
     text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
   }
 
-  /* ---- Responsive number sizes ---- */
+  /* Responsive number sizes */
   .tile-num {
     font-size: clamp(18px, calc(var(--tile) * 0.36), 34px);
     line-height: 1;
@@ -134,7 +115,7 @@
     line-height: 1;
   }
 
-  /* ---- Spawn / merge FX ---- */
+  /* Pop animation for newly spawned tiles */
   @keyframes pop {
     0% {
       transform: scale(0.6);
@@ -145,6 +126,31 @@
   }
   .pop {
     animation: pop 140ms ease-out;
+  }
+
+  .anim-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .anim-tile {
+    position: absolute;
+    width: var(--tile);
+    height: var(--tile);
+    border-radius: 1rem;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform-origin: top left;
+    transition: none;
+    contain: layout paint;
+  }
+
+  .anim-run {
+    transition: transform 150ms ease-out;
   }
 
   .merge-glow {
@@ -163,40 +169,23 @@
     }
   }
 
-  /* ---- Animation layer / tiles ---- */
-  .anim-layer {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+  .board-stage {
+    position: relative;
+    width: calc(4 * var(--tile) + 3 * var(--gap));
+    height: calc(4 * var(--tile) + 3 * var(--gap));
+    touch-action: none;
   }
 
-  .anim-tile {
-    position: absolute;
-    width: var(--tile);
-    height: var(--tile);
-    border-radius: 1rem;
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    will-change: transform;
-    backface-visibility: hidden;
-    transform-origin: top left; /* strict axis movement */
-    transition: none; /* start without transition */
-    contain: layout paint; /* isolate layout for stability */
-  }
-
-  .anim-run {
-    transition: transform 150ms ease-out;
-  }
-
-  /* Respect OS motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .anim-run {
-      transition: none;
+  @media (max-width: 520px) {
+    .board-stage {
+      --stage: min(92vw, 520px);
+      --tile: calc((var(--stage) - 3 * var(--gap)) / 4);
+      width: var(--stage);
+      height: var(--stage);
     }
-    .pop,
-    .merge-glow {
-      animation: none;
+    .board {
+      width: 100%;
+      grid-template-columns: repeat(4, 1fr);
     }
   }
 }
