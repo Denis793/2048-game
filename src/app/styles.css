@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+
+/* Light/Dark base */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-white text-neutral-900 antialiased;
+  }
+  .dark body {
+    @apply bg-neutral-900 text-neutral-100;
+  }
+}
+
+/* Components */
+@layer components {
+  .card {
+    @apply rounded-2xl shadow p-4
+           bg-white text-neutral-900
+           dark:bg-neutral-800 dark:text-neutral-100;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition;
+  }
+
+  .btn-primary {
+    @apply bg-neutral-200 text-neutral-900 hover:bg-neutral-300
+           dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white;
+  }
+
+  .btn-ghost {
+    @apply bg-neutral-100 text-neutral-900 hover:bg-neutral-200
+           dark:bg-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-600;
+  }
+}
+
+/* === Responsive board sizing & number styling === */
+@layer utilities {
+  :root {
+    --tile: 96px;
+    --gap: 12px;
+  }
+  @media (max-width: 1024px) {
+    :root {
+      --tile: 88px;
+      --gap: 12px;
+    }
+  }
+  @media (max-width: 768px) {
+    :root {
+      --tile: 76px;
+      --gap: 10px;
+    }
+  }
+  @media (max-width: 520px) {
+    :root {
+      --tile: 64px;
+      --gap: 10px;
+    }
+  }
+  @media (max-width: 380px) {
+    :root {
+      --tile: 56px;
+      --gap: 8px;
+    }
+  }
+
+  /* Optional: exact-sized stage for board + animation layer */
+  .board-stage {
+    position: relative;
+    width: calc(4 * var(--tile) + 3 * var(--gap));
+    height: calc(4 * var(--tile) + 3 * var(--gap));
+  }
+
+  /* Board width exactly fits tiles + gaps */
+  .board {
+    display: inline-grid;
+    grid-template-columns: repeat(4, var(--tile));
+    gap: var(--gap);
+    width: calc(4 * var(--tile) + 3 * var(--gap));
+  }
+
+  .tile {
+    width: var(--tile);
+    height: var(--tile);
+  }
+
+  /* Text shadow utilities (for digits) */
+  .text-shadow-sm {
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  }
+  .text-shadow-md {
+    text-shadow: 0 2px 2px rgba(0, 0, 0, 0.35);
+  }
+  .text-shadow-lg {
+    text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Responsive number sizes */
+  .tile-num {
+    font-size: clamp(18px, calc(var(--tile) * 0.36), 34px);
+    line-height: 1;
+  }
+  .tile-num--big {
+    font-size: clamp(16px, calc(var(--tile) * 0.3), 28px);
+    line-height: 1;
+  }
+  .tile-num--huge {
+    font-size: clamp(14px, calc(var(--tile) * 0.26), 24px);
+    line-height: 1;
+  }
+
+  /* Pop animation for newly spawned tiles */
+  @keyframes pop {
+    0% {
+      transform: scale(0.6);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .pop {
+    animation: pop 140ms ease-out;
+  }
+
+  .anim-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .anim-tile {
+    position: absolute;
+    width: var(--tile);
+    height: var(--tile);
+    border-radius: 1rem;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform-origin: top left;
+    transition: none;
+    contain: layout paint;
+  }
+
+  .anim-run {
+    transition: transform 150ms ease-out;
+  }
+
+  .merge-glow {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    animation: mergeGlow 180ms ease-out;
+  }
+  @keyframes mergeGlow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+}
