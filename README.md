@@ -4,6 +4,24 @@ A modern implementation of the classic **2048 puzzle game**, built with **React,
 Supports multiple players, persistent saves, animations, responsive design, and theme switching.
 
 ---
+## 📸 Preview
+
+<p align="center">
+  <a href="https://2048-game-pi-ten.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/View%20Project-Click%20Here-blue?style=for-the-badge" alt="View Project">
+  </a>
+</p>
+
+---
+
+## 🖼️ Screenshot
+
+<div align="center">
+  <img src="https://github.com/Denis793/2048-game/blob/main/public/img/Screen.png" alt="View click" height="auto" width="100%">
+
+</div>
+
+---
 
 ## 🎮 Features
 
