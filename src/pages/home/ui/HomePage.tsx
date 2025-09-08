@@ -11,7 +11,7 @@ export function HomePage() {
   const game = useGame(currentId ?? '');
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="game-container min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-[520px] flex flex-col items-center">
         {/* Header: stack on mobile, row on sm+ */}
         <div className="w-full mb-4">

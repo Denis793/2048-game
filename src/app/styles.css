@@ -39,8 +39,9 @@
   }
 }
 
-/* === Responsive board sizing & number styling === */
+/* === Utilities === */
 @layer utilities {
+  /* Global tile/gap variables */
   :root {
     --tile: 96px;
     --gap: 12px;
@@ -56,6 +57,13 @@
       --tile: 76px;
       --gap: 10px;
     }
+    /* Lift the whole app on mobile and avoid bottom gesture bar */
+    .game-container {
+      justify-content: flex-start; /* override justify-center on mobile */
+      margin-top: 0.5rem;
+      margin-bottom: 4.5rem; /* more space for swipe area */
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
   }
   @media (max-width: 520px) {
     :root {
@@ -70,14 +78,26 @@
     }
   }
 
-  /* Optional: exact-sized stage for board + animation layer */
+  /* Single, canonical definition for the stage */
   .board-stage {
     position: relative;
     width: calc(4 * var(--tile) + 3 * var(--gap));
     height: calc(4 * var(--tile) + 3 * var(--gap));
+    touch-action: none; /* prevent page scroll while swiping */
   }
 
-  /* Board width exactly fits tiles + gaps */
+  /* On small screens the stage fills most of the width,
+     and we recompute --tile from the actual stage size. */
+  @media (max-width: 520px) {
+    .board-stage {
+      --stage: min(92vw, 520px);
+      --tile: calc((var(--stage) - 3 * var(--gap)) / 4);
+      width: var(--stage);
+      height: var(--stage);
+    }
+  }
+
+  /* Board grid strictly uses var(--tile) to match animation math */
   .board {
     display: inline-grid;
     grid-template-columns: repeat(4, var(--tile));
@@ -90,7 +110,7 @@
     height: var(--tile);
   }
 
-  /* Text shadow utilities (for digits) */
+  /* Number text shadows */
   .text-shadow-sm {
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
   }
@@ -115,7 +135,7 @@
     line-height: 1;
   }
 
-  /* Pop animation for newly spawned tiles */
+  /* Spawn / merge effects */
   @keyframes pop {
     0% {
       transform: scale(0.6);
@@ -128,6 +148,23 @@
     animation: pop 140ms ease-out;
   }
 
+  .merge-glow {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    animation: mergeGlow 180ms ease-out;
+  }
+  @keyframes mergeGlow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+
+  /* Animation layer */
   .anim-layer {
     position: absolute;
     inset: 0;
@@ -148,44 +185,18 @@
     transition: none;
     contain: layout paint;
   }
-
   .anim-run {
     transition: transform 150ms ease-out;
   }
 
-  .merge-glow {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-    animation: mergeGlow 180ms ease-out;
-  }
-  @keyframes mergeGlow {
-    0% {
-      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  /* Accessibility: respect OS motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .anim-run {
+      transition: none;
     }
-    50% {
-      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-    }
-  }
-
-  .board-stage {
-    position: relative;
-    width: calc(4 * var(--tile) + 3 * var(--gap));
-    height: calc(4 * var(--tile) + 3 * var(--gap));
-    touch-action: none;
-  }
-
-  @media (max-width: 520px) {
-    .board-stage {
-      --stage: min(92vw, 520px);
-      --tile: calc((var(--stage) - 3 * var(--gap)) / 4);
-      width: var(--stage);
-      height: var(--stage);
-    }
-    .board {
-      width: 100%;
-      grid-template-columns: repeat(4, 1fr);
+    .pop,
+    .merge-glow {
+      animation: none;
     }
   }
 }
