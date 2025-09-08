@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Light/Dark base */
+/* ========== Base (light/dark) ========== */
 @layer base {
   html,
   body,
@@ -16,7 +16,7 @@
   }
 }
 
-/* Components */
+/* ========== Components ========== */
 @layer components {
   .card {
     @apply rounded-2xl shadow p-4
@@ -39,8 +39,9 @@
   }
 }
 
-/* === Responsive board sizing & number styling === */
+/* ========== Utilities ========== */
 @layer utilities {
+  /* ---- Responsive sizing via CSS variables ---- */
   :root {
     --tile: 96px;
     --gap: 12px;
@@ -70,19 +71,37 @@
     }
   }
 
-  /* Optional: exact-sized stage for board + animation layer */
+  /* ---- Stage (board + animation layer) ---- */
   .board-stage {
     position: relative;
     width: calc(4 * var(--tile) + 3 * var(--gap));
     height: calc(4 * var(--tile) + 3 * var(--gap));
+    touch-action: none; /* prevent page scroll while swiping on board */
   }
 
-  /* Board width exactly fits tiles + gaps */
+  /* Mobile: stage fills almost full width; recompute --tile locally */
+  @media (max-width: 520px) {
+    .board-stage {
+      --stage: min(92vw, 520px);
+      --tile: calc((var(--stage) - 3 * var(--gap)) / 4);
+      width: var(--stage);
+      height: var(--stage);
+    }
+  }
+
+  /* ---- Grid / tiles ---- */
   .board {
     display: inline-grid;
     grid-template-columns: repeat(4, var(--tile));
     gap: var(--gap);
     width: calc(4 * var(--tile) + 3 * var(--gap));
+  }
+  /* On mobile stage we already set width; use fractions to avoid rounding gaps */
+  @media (max-width: 520px) {
+    .board {
+      width: 100%;
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   .tile {
@@ -90,7 +109,7 @@
     height: var(--tile);
   }
 
-  /* Text shadow utilities (for digits) */
+  /* ---- Number text shadows ---- */
   .text-shadow-sm {
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
   }
@@ -101,7 +120,7 @@
     text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
   }
 
-  /* Responsive number sizes */
+  /* ---- Responsive number sizes ---- */
   .tile-num {
     font-size: clamp(18px, calc(var(--tile) * 0.36), 34px);
     line-height: 1;
@@ -115,7 +134,7 @@
     line-height: 1;
   }
 
-  /* Pop animation for newly spawned tiles */
+  /* ---- Spawn / merge FX ---- */
   @keyframes pop {
     0% {
       transform: scale(0.6);
@@ -128,6 +147,23 @@
     animation: pop 140ms ease-out;
   }
 
+  .merge-glow {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    animation: mergeGlow 180ms ease-out;
+  }
+  @keyframes mergeGlow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+
+  /* ---- Animation layer / tiles ---- */
   .anim-layer {
     position: absolute;
     inset: 0;
@@ -144,28 +180,23 @@
     font-weight: 800;
     will-change: transform;
     backface-visibility: hidden;
-    transform-origin: top left;
-    transition: none;
-    contain: layout paint;
+    transform-origin: top left; /* strict axis movement */
+    transition: none; /* start without transition */
+    contain: layout paint; /* isolate layout for stability */
   }
 
   .anim-run {
     transition: transform 150ms ease-out;
   }
 
-  .merge-glow {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-    animation: mergeGlow 180ms ease-out;
-  }
-  @keyframes mergeGlow {
-    0% {
-      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  /* Respect OS motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .anim-run {
+      transition: none;
     }
-    50% {
-      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.25);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    .pop,
+    .merge-glow {
+      animation: none;
     }
   }
 }
