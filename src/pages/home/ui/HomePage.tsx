@@ -101,13 +101,13 @@ export function HomePage() {
           </div>
 
           {/* Bottom counters & actions */}
-          <div className="w-full mb-4">
+          <div className="w-full my-14">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div className="grid grid-cols-2 gap-2 sm:flex">
                 <Counter label="SCORE" value={game.score} />
                 <Counter label="BEST" value={game.bestGlobal} />
-                <Controls.ResetBest onClick={game.resetBest} />
-                <Controls.Undo onClick={game.undo} disabled={!game.canUndo} />
+                <Controls.ResetBest className="py-7" onClick={game.resetBest} />
+                <Controls.Undo className="py-7" onClick={game.undo} disabled={!game.canUndo} />
               </div>
             </div>
           </div>
