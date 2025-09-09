@@ -22,10 +22,11 @@ type Persisted = {
   board: Board;
   score: number;
   best: number;
-  won: boolean;
+  won: boolean; // whether the win modal is currently shown
   over: boolean;
   lastSpawn: Coord | null;
   history: { board: Board; score: number; won: boolean; over: boolean }[];
+  reachedTarget: boolean; // set once when TARGET first reached; never re-triggers within same game
 };
 
 export function useGame(playerId: string) {
@@ -33,7 +34,7 @@ export function useGame(playerId: string) {
   const persisted = useMemo(() => {
     try {
       const raw = localStorage.getItem(snapKey(playerId));
-      return raw ? (JSON.parse(raw) as Persisted) : null;
+      return raw ? (JSON.parse(raw) as Partial<Persisted>) : null;
     } catch {
       return null;
     }
@@ -41,37 +42,41 @@ export function useGame(playerId: string) {
   }, [playerId]);
 
   /** Game state */
-  const [board, setBoard] = useState<Board>(() => persisted?.board ?? createEmptyBoard(BOARD_SIZE));
-  const [score, setScore] = useState<number>(() => persisted?.score ?? 0);
-  const [best, setBest] = useState<number>(() => persisted?.best ?? 0);
-  const [won, setWon] = useState<boolean>(() => persisted?.won ?? false);
-  const [over, setOver] = useState<boolean>(() => persisted?.over ?? false);
-  const [lastSpawn, setLastSpawn] = useState<Coord | null>(() => persisted?.lastSpawn ?? null);
+  const initialBoard = persisted?.board ?? createEmptyBoard(BOARD_SIZE);
+  const [board, setBoard] = useState<Board>(initialBoard);
+  const [score, setScore] = useState<number>(persisted?.score ?? 0);
+  const [best, setBest] = useState<number>(persisted?.best ?? 0);
+  const [won, setWon] = useState<boolean>(persisted?.won ?? false);
+  const [over, setOver] = useState<boolean>(persisted?.over ?? false);
+  const [lastSpawn, setLastSpawn] = useState<Coord | null>(persisted?.lastSpawn ?? null);
   const [history, setHistory] = useState<{ board: Board; score: number; won: boolean; over: boolean }[]>(
     () => persisted?.history ?? []
   );
   const [lastDir, setLastDir] = useState<Direction | null>(null);
 
+  // One-time win flag per game (prevents re-opening the win modal)
+  const [reachedTarget, setReachedTarget] = useState<boolean>(
+    persisted?.reachedTarget ?? maxTile(initialBoard) >= TARGET
+  );
+
   // Animation moves
   const [animMoves, setAnimMoves] = useState<Move[] | null>(null);
 
   /** Theme */
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    const t = localStorage.getItem(THEME_KEY);
-    return t === 'dark';
-  });
+  const [isDark, setIsDark] = useState<boolean>(() => localStorage.getItem(THEME_KEY) === 'dark');
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  /** Helpers for GLOBAL BEST */
+  /** Helpers for GLOBAL BEST (ONLY from `best`) */
   const computeGlobalBest = useCallback(() => {
     let g = 0;
 
     const gb = Number(localStorage.getItem(GLOBAL_BEST_KEY) ?? 0);
     if (gb > g) g = gb;
 
+    // scan snapshots (best only)
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -79,19 +84,19 @@ export function useGame(playerId: string) {
         const raw = localStorage.getItem(k);
         if (!raw) continue;
         const s = JSON.parse(raw) as Partial<Persisted>;
-        const candidate = Math.max(Number(s.best ?? 0), Number(s.score ?? 0));
+        const candidate = Number(s.best ?? 0);
         if (candidate > g) g = candidate;
       }
     } catch {
-      /* ignore parse errors */
+      /* ignore */
     }
     return g;
   }, []);
 
-  const bumpGlobalBest = useCallback((candidate: number) => {
+  const bumpGlobalBest = useCallback((candidateBest: number) => {
     const cur = Number(localStorage.getItem(GLOBAL_BEST_KEY) ?? 0);
-    if (candidate > cur) {
-      localStorage.setItem(GLOBAL_BEST_KEY, String(candidate));
+    if (candidateBest > cur) {
+      localStorage.setItem(GLOBAL_BEST_KEY, String(candidateBest));
     }
   }, []);
 
@@ -108,27 +113,29 @@ export function useGame(playerId: string) {
         over,
         lastSpawn,
         history,
+        reachedTarget,
         ...payload,
-      };
+      } as Persisted;
       localStorage.setItem(snapKey(playerId), JSON.stringify(snapshot));
 
-      // keep dedicated global best up to date
-      bumpGlobalBest(Math.max(snapshot.best, snapshot.score));
+      // update global best ONLY from best
+      bumpGlobalBest(snapshot.best);
       setBestGlobal(computeGlobalBest());
     },
-    [board, score, best, won, over, lastSpawn, history, playerId, bumpGlobalBest, computeGlobalBest]
+    [board, score, best, won, over, lastSpawn, history, playerId, reachedTarget, bumpGlobalBest, computeGlobalBest]
   );
 
-  /** ▼ IMPORTANT: when playerId or persisted snapshot changes, load it into state */
+  /** when playerId or persisted snapshot changes, load it into state */
   useEffect(() => {
-    if (persisted) {
+    if (persisted && persisted.board) {
       setBoard(persisted.board);
-      setScore(persisted.score);
-      setBest(persisted.best);
-      setWon(persisted.won);
-      setOver(persisted.over);
-      setLastSpawn(persisted.lastSpawn);
-      setHistory(persisted.history);
+      setScore(persisted.score ?? 0);
+      setBest(persisted.best ?? 0);
+      setWon(persisted.won ?? false);
+      setOver(persisted.over ?? false);
+      setLastSpawn(persisted.lastSpawn ?? null);
+      setHistory(persisted.history ?? []);
+      setReachedTarget(persisted.reachedTarget ?? maxTile(persisted.board) >= TARGET);
       setLastDir(null);
       setAnimMoves(null);
     } else {
@@ -142,6 +149,7 @@ export function useGame(playerId: string) {
       setWon(false);
       setOver(false);
       setHistory([]);
+      setReachedTarget(maxTile(b2.board) >= TARGET);
       setLastDir(null);
       setAnimMoves(null);
       localStorage.setItem(
@@ -154,13 +162,13 @@ export function useGame(playerId: string) {
           over: false,
           lastSpawn: b2.pos,
           history: [],
+          reachedTarget: maxTile(b2.board) >= TARGET,
         } satisfies Persisted)
       );
     }
-    // also refresh global best on player switch
     setBestGlobal(computeGlobalBest());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerId, persisted]);
+  }, [playerId]);
 
   /** Apply move */
   const applyMove = useCallback(
@@ -192,12 +200,25 @@ export function useGame(playerId: string) {
       if (ns > best) setBest(ns);
 
       const maxV = maxTile(nb);
-      if (!won && maxV >= TARGET) setWon(true);
+      // Show win only once per game:
+      if (!reachedTarget && maxV >= TARGET) {
+        setWon(true);
+        setReachedTarget(true); // lock
+      }
       if (!hasMoves(nb)) setOver(true);
 
-      persistAll({ board: nb, score: ns, best: Math.max(best, ns), lastSpawn: spawned.pos, won, over });
+      // persist
+      persistAll({
+        board: nb,
+        score: ns,
+        best: Math.max(best, ns),
+        lastSpawn: spawned.pos,
+        won: won || (!reachedTarget && maxV >= TARGET),
+        reachedTarget: reachedTarget || maxV >= TARGET,
+        over,
+      });
     },
-    [board, score, best, won, over, persistAll]
+    [board, score, best, won, over, reachedTarget, persistAll]
   );
 
   /** New game (for current player only) */
@@ -211,6 +232,7 @@ export function useGame(playerId: string) {
     setWon(false);
     setOver(false);
     setHistory([]);
+    setReachedTarget(false); // reset one-time flag
     setLastDir(null);
     setAnimMoves(null);
     persistAll({
@@ -219,13 +241,15 @@ export function useGame(playerId: string) {
       lastSpawn: b2.pos,
       won: false,
       over: false,
+      reachedTarget: false,
     });
   }, [persistAll]);
 
-  /** Continue after 2048 */
+  /** Continue after 2048 (do not re-open the win modal later) */
   const continueGame = useCallback(() => {
     setWon(false);
-    persistAll({ won: false });
+    // keep reachedTarget = true
+    persistAll({ won: false, reachedTarget: true });
   }, [persistAll]);
 
   /** Undo */
@@ -240,6 +264,7 @@ export function useGame(playerId: string) {
       setLastSpawn(null);
       setLastDir(null);
       setAnimMoves(null);
+      // keep reachedTarget as-is (it is a game-level latch)
       persistAll({
         board: prev.board,
         score: prev.score,
@@ -252,36 +277,30 @@ export function useGame(playerId: string) {
     });
   }, [persistAll]);
 
-  const resetBest = useCallback(
-    (scope: 'current' | 'all' = 'all') => {
-      if (scope === 'current') {
-        setBest(0);
-        persistAll({ best: 0 });
-        return;
+  /** Reset ALL best results (every player + global). */
+  const resetBest = useCallback(() => {
+    // 1) zero out every snapshot's 'best'
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(SNAP_PREFIX)) continue;
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      try {
+        const s = JSON.parse(raw) as Persisted;
+        s.best = 0;
+        localStorage.setItem(k, JSON.stringify(s));
+      } catch {
+        /* ignore */
       }
-      // reset ALL players' bests
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || !k.startsWith(SNAP_PREFIX)) continue;
-        const raw = localStorage.getItem(k);
-        if (!raw) continue;
-        try {
-          const s = JSON.parse(raw) as Persisted;
-          s.best = 0;
-          localStorage.setItem(k, JSON.stringify(s));
-        } catch {
-          /* ignore */
-        }
-      }
-      // reset global key
-      localStorage.setItem(GLOBAL_BEST_KEY, '0');
+    }
+    // 2) reset dedicated global key
+    localStorage.setItem(GLOBAL_BEST_KEY, '0');
 
-      setBest(0);
-      setBestGlobal(0);
-      persistAll({ best: 0 });
-    },
-    [persistAll]
-  );
+    // 3) update current state + persist snapshot of current player
+    setBest(0);
+    setBestGlobal(0);
+    persistAll({ best: 0 });
+  }, [persistAll]);
 
   const toggleTheme = useCallback(() => setIsDark((v) => !v), []);
   const canUndo = history.length > 0;
@@ -305,11 +324,64 @@ export function useGame(playerId: string) {
     return () => window.removeEventListener('keydown', onKey as any);
   }, [applyMove]);
 
+  /** ---------- DEBUG UTILITIES ---------- */
+
+  /** Replace entire board & recompute derived flags. */
+  const debugSetBoard = useCallback(
+    (next: Board) => {
+      const nextScore = next.flat().reduce((a, v) => a + (v > 0 ? v : 0), 0);
+      const maxV = maxTile(next);
+      const nextReached = reachedTarget || maxV >= TARGET;
+      setBoard(next);
+      setScore(nextScore);
+      setWon(!nextReached && maxV >= TARGET ? true : won); // if first reach occurs exactly now
+      setOver(!hasMoves(next));
+      setLastSpawn(null);
+      setLastDir(null);
+      setHistory([]);
+      setReachedTarget(nextReached);
+      persistAll({
+        board: next,
+        score: nextScore,
+        won: !nextReached && maxV >= TARGET ? true : won,
+        over: !hasMoves(next),
+        lastSpawn: null,
+        history: [],
+        reachedTarget: nextReached,
+        best: Math.max(best, nextScore),
+      });
+    },
+    [best, won, reachedTarget, persistAll]
+  );
+
+  /** Quick scenario: place two equal tiles to be merged on next move in given direction. */
+  const debugQuickMerge = useCallback(
+    (value: number, dir: Direction) => {
+      // start from empty
+      const b = createEmptyBoard(4);
+      if (dir === 'left') {
+        b[0][0] = value;
+        b[0][1] = value;
+      } else if (dir === 'right') {
+        b[0][3] = value;
+        b[0][2] = value;
+      } else if (dir === 'up') {
+        b[0][0] = value;
+        b[1][0] = value;
+      } else {
+        b[3][0] = value;
+        b[2][0] = value;
+      }
+      debugSetBoard(b);
+    },
+    [debugSetBoard]
+  );
+
   return {
     board,
     score,
-    best,
-    bestGlobal,
+    best, // per-player best
+    bestGlobal, // global best across all players (from 'best' only)
     won,
     over,
     lastSpawn,
@@ -317,11 +389,14 @@ export function useGame(playerId: string) {
     isDark,
     applyMove,
     newGame,
-    continueGame,
+    continueGame, // will not re-open the win modal later
     undo,
-    resetBest,
+    resetBest, // resets ALL bests to 0
     toggleTheme,
     canUndo,
     animMoves,
+    // DEBUG:
+    debugSetBoard,
+    debugQuickMerge,
   };
 }

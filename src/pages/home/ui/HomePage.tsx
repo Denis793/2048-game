@@ -5,14 +5,22 @@ import { useGame } from '@entities/board/model/useGame';
 import { Counter } from '@shared/ui/Counter';
 import { usePlayers } from '@entities/player/model/usePlayers';
 import { PlayerMenu } from '@entities/player/ui/PlayerMenu';
+import { DebugPanel } from '@features/debug/ui/DebugPanel';
 
 export function HomePage() {
   const { players, current, currentId, select, create, rename, remove } = usePlayers();
   const game = useGame(currentId ?? '');
 
+  const debug =
+    (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1') ||
+    (typeof window !== 'undefined' && localStorage.getItem('2048:debug') === '1');
+
   return (
     <div className="game-container min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-[520px] flex flex-col items-center">
+        {/* Debug only */}
+        {debug && <DebugPanel onQuick={game.debugQuickMerge} onSetBoard={game.debugSetBoard} />}
+
         {/* Controls */}
         <div className="w-full mb-4">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -28,8 +36,7 @@ export function HomePage() {
             <Controls.Undo onClick={game.undo} disabled={!game.canUndo} />
             <Controls.ThemeToggle onClick={game.toggleTheme} isDark={game.isDark} />
             <div className="sm:ml-auto">
-              {/* Reset all bests (global) by default */}
-              <Controls.ResetBest onClick={() => game.resetBest('all')} />
+              <Controls.ResetBest onClick={game.resetBest} />
             </div>
           </div>
         </div>

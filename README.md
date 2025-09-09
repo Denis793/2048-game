@@ -1,9 +1,10 @@
 # 2048 Game (React + TypeScript + Tailwind)
 
 A modern implementation of the classic **2048 puzzle game**, built with **React, TypeScript, and TailwindCSS**.  
-Supports multiple players, persistent saves, animations, responsive design, and theme switching.
+Supports multiple players, persistent saves, animations, responsive design, theme switching, and a built-in debug mode for testing.
 
 ---
+
 ## 📸 Preview
 
 <p align="center">
@@ -18,7 +19,6 @@ Supports multiple players, persistent saves, animations, responsive design, and 
 
 <div align="center">
   <img src="https://github.com/Denis793/2048-game/blob/main/public/img/Screen.png" alt="View click" height="auto" width="100%">
-
 </div>
 
 ---
@@ -68,11 +68,21 @@ Supports multiple players, persistent saves, animations, responsive design, and 
   - Menu and all UI elements adapt automatically.
 
 - **Responsive UI**
+
   - Board scales with screen width (desktop, tablet, mobile).
   - Font size adjusts to tile size.
   - Controls rearrange:
     - **Grid layout** on small screens.
     - **Inline layout** on larger screens.
+
+- **🧩 Debug Mode**
+  - A built-in debug panel to test high-value merges without grinding.
+  - Enable via:
+    - URL: `?debug=1`
+    - Or: `localStorage.setItem('2048:debug', '1')`
+  - Features:
+    - Quick merge buttons (`1024+1024`, `2048+2048`, etc.) in any direction.
+    - Custom board setter: paste a 4×4 JSON matrix.
 
 ---
 
@@ -85,6 +95,7 @@ Supports multiple players, persistent saves, animations, responsive design, and 
 - **PostCSS + Autoprefixer** — CSS tooling
 - **Vitest** — unit testing (movement logic, merge rules)
 - **ESLint + Prettier** — linting & formatting
+- **LocalStorage API** — persistence across sessions
 
 ---
 
@@ -146,5 +157,3 @@ npm run test
 
 Developed by **Denys Shevchenko** as a portfolio project.  
 Perfect for demonstrating **React + TypeScript + Tailwind** skills and clean architecture.
-
----
