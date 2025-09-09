@@ -104,7 +104,7 @@ Supports multiple players, persistent saves, animations, responsive design, them
 Clone repo and install dependencies:
 
 ```bash
-git clone https://github.com/your-username/2048-react-ts.git
+git clone https://github.com/Denis793/2048-game.git
 cd 2048-react-ts
 npm install
 ```

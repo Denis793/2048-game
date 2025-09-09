@@ -13,6 +13,7 @@ function AnimatedTile({ move, fromPos, toPos }: { move: Move; fromPos: Pos; toPo
   const [transform, setTransform] = useState<string>(`translate3d(${fromPos.x}px, ${fromPos.y}px, 0)`);
 
   useEffect(() => {
+    // Reset transform to the start point and force layout, then run to the target
     setRun(false);
     setTransform(`translate3d(${fromPos.x}px, ${fromPos.y}px, 0)`);
 
@@ -54,8 +55,10 @@ export function GameBoard(props: {
   onContinue?: () => void;
   onKeyDir: (d: Direction) => void;
   animMoves?: Move[] | null;
+  /** Player name to display in the win/lose modal. */
+  playerName?: string;
 }) {
-  const { board, lastSpawn, won, over, onNewGame, onUndo, onContinue, onKeyDir, animMoves } = props;
+  const { board, lastSpawn, won, over, onNewGame, onUndo, onContinue, onKeyDir, animMoves, playerName } = props;
 
   /** Refs to grid and every static cell (for measuring). */
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -131,8 +134,8 @@ export function GameBoard(props: {
     const dy = e.clientY - p.sy;
 
     if (!p.axis) {
-      const ax = Math.abs(dx),
-        ay = Math.abs(dy);
+      const ax = Math.abs(dx);
+      const ay = Math.abs(dy);
       const thr = getThreshold() * 0.5;
       if (ax < thr && ay < thr) return;
       p.axis = ax > ay * AXIS_RATIO ? 'x' : ay > ax * AXIS_RATIO ? 'y' : undefined;
@@ -229,13 +232,16 @@ export function GameBoard(props: {
         )}
       </div>
 
+      {/* --- Overlay for win/lose modal --- */}
       {(won || over) && (
         <div
           className="absolute inset-0 rounded-2xl grid place-items-center
-                     bg-white/80 dark:bg-black/40 backdrop-blur-[2px]"
+               bg-white/80 dark:bg-black/40 backdrop-blur-[2px]"
         >
           <div className="text-center">
-            <div className="text-3xl font-black mb-2">{won ? 'You win!' : 'Game over'}</div>
+            <div className="text-3xl font-black mb-2">
+              {won ? `${playerName ?? 'Player'} wins!` : `${playerName ?? 'Player'} lost`}
+            </div>
             <div className="text-sm text-neutral-700 dark:text-neutral-200 mb-3">
               {won ? 'Reach higher tiles?' : 'Try again?'}
             </div>
