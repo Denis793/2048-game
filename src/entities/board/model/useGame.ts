@@ -13,10 +13,10 @@ import { BOARD_SIZE, TARGET, THEME_KEY } from '@shared/config';
 import type { Board, Coord, Direction } from './types';
 import type { Move } from '@shared/lib/game/types';
 
-const SNAP_PREFIX = '2048:snapshot:';
+/** Storage keys */
+const SNAP_PREFIX = '2048:snapshot:'; // per-player snapshot
 const snapKey = (playerId: string) => `${SNAP_PREFIX}${playerId}`;
-
-type HistoryItem = { board: Board; score: number; won: boolean; over: boolean };
+const GLOBAL_BEST_KEY = '2048:bestGlobal'; // persistent global best (survives player deletion)
 
 type Persisted = {
   board: Board;
@@ -25,10 +25,11 @@ type Persisted = {
   won: boolean;
   over: boolean;
   lastSpawn: Coord | null;
-  history: HistoryItem[];
+  history: { board: Board; score: number; won: boolean; over: boolean }[];
 };
 
 export function useGame(playerId: string) {
+  /** Load persisted snapshot for current player (raw) */
   const persisted = useMemo(() => {
     try {
       const raw = localStorage.getItem(snapKey(playerId));
@@ -36,18 +37,22 @@ export function useGame(playerId: string) {
     } catch {
       return null;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerId]);
 
+  /** Game state */
   const [board, setBoard] = useState<Board>(() => persisted?.board ?? createEmptyBoard(BOARD_SIZE));
   const [score, setScore] = useState<number>(() => persisted?.score ?? 0);
   const [best, setBest] = useState<number>(() => persisted?.best ?? 0);
   const [won, setWon] = useState<boolean>(() => persisted?.won ?? false);
   const [over, setOver] = useState<boolean>(() => persisted?.over ?? false);
   const [lastSpawn, setLastSpawn] = useState<Coord | null>(() => persisted?.lastSpawn ?? null);
-  const [history, setHistory] = useState<HistoryItem[]>(() => persisted?.history ?? []);
+  const [history, setHistory] = useState<{ board: Board; score: number; won: boolean; over: boolean }[]>(
+    () => persisted?.history ?? []
+  );
   const [lastDir, setLastDir] = useState<Direction | null>(null);
 
-  /** Animation moves passed to GameBoard for smooth movement */
+  // Animation moves
   const [animMoves, setAnimMoves] = useState<Move[] | null>(null);
 
   /** Theme */
@@ -60,9 +65,13 @@ export function useGame(playerId: string) {
     localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
   }, [isDark]);
 
-  /** Compute GLOBAL best by scanning all players' snapshots */
-  const computeGlobalBest = useCallback((): number => {
-    let global = 0;
+  /** Helpers for GLOBAL BEST */
+  const computeGlobalBest = useCallback(() => {
+    let g = 0;
+
+    const gb = Number(localStorage.getItem(GLOBAL_BEST_KEY) ?? 0);
+    if (gb > g) g = gb;
+
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -71,17 +80,27 @@ export function useGame(playerId: string) {
         if (!raw) continue;
         const s = JSON.parse(raw) as Partial<Persisted>;
         const candidate = Math.max(Number(s.best ?? 0), Number(s.score ?? 0));
-        if (candidate > global) global = candidate;
+        if (candidate > g) g = candidate;
       }
-    } catch {}
-    return global;
+    } catch {
+      /* ignore parse errors */
+    }
+    return g;
   }, []);
+
+  const bumpGlobalBest = useCallback((candidate: number) => {
+    const cur = Number(localStorage.getItem(GLOBAL_BEST_KEY) ?? 0);
+    if (candidate > cur) {
+      localStorage.setItem(GLOBAL_BEST_KEY, String(candidate));
+    }
+  }, []);
+
   const [bestGlobal, setBestGlobal] = useState<number>(() => computeGlobalBest());
 
-  /** Persist current player's snapshot and refresh global best */
+  /** Persist snapshot for the current player and refresh global best */
   const persistAll = useCallback(
-    (patch?: Partial<Persisted>) => {
-      const snap: Persisted = {
+    (payload?: Partial<Persisted>) => {
+      const snapshot: Persisted = {
         board,
         score,
         best,
@@ -89,17 +108,30 @@ export function useGame(playerId: string) {
         over,
         lastSpawn,
         history,
-        ...patch,
+        ...payload,
       };
-      localStorage.setItem(snapKey(playerId), JSON.stringify(snap));
+      localStorage.setItem(snapKey(playerId), JSON.stringify(snapshot));
+
+      // keep dedicated global best up to date
+      bumpGlobalBest(Math.max(snapshot.best, snapshot.score));
       setBestGlobal(computeGlobalBest());
     },
-    [board, score, best, won, over, lastSpawn, history, playerId, computeGlobalBest]
+    [board, score, best, won, over, lastSpawn, history, playerId, bumpGlobalBest, computeGlobalBest]
   );
 
-  /** Initialize a new game if there is no snapshot for this player */
+  /** ▼ IMPORTANT: when playerId or persisted snapshot changes, load it into state */
   useEffect(() => {
-    if (!persisted) {
+    if (persisted) {
+      setBoard(persisted.board);
+      setScore(persisted.score);
+      setBest(persisted.best);
+      setWon(persisted.won);
+      setOver(persisted.over);
+      setLastSpawn(persisted.lastSpawn);
+      setHistory(persisted.history);
+      setLastDir(null);
+      setAnimMoves(null);
+    } else {
       let b = createEmptyBoard(BOARD_SIZE);
       b = addRandomTile(b).board;
       const b2 = addRandomTile(b);
@@ -111,23 +143,26 @@ export function useGame(playerId: string) {
       setOver(false);
       setHistory([]);
       setLastDir(null);
-      persistAll({
-        board: b2.board,
-        score: 0,
-        best: 0,
-        won: false,
-        over: false,
-        lastSpawn: b2.pos,
-        history: [],
-      });
-    } else {
-      // refresh global best when player changes
-      setBestGlobal(computeGlobalBest());
+      setAnimMoves(null);
+      localStorage.setItem(
+        snapKey(playerId),
+        JSON.stringify({
+          board: b2.board,
+          score: 0,
+          best: 0,
+          won: false,
+          over: false,
+          lastSpawn: b2.pos,
+          history: [],
+        } satisfies Persisted)
+      );
     }
+    // also refresh global best on player switch
+    setBestGlobal(computeGlobalBest());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerId]);
+  }, [playerId, persisted]);
 
-  /** Apply move in given direction */
+  /** Apply move */
   const applyMove = useCallback(
     (dir: Direction) => {
       if (over) return;
@@ -135,9 +170,14 @@ export function useGame(playerId: string) {
       const { board: movedBoard, moved, gained, moves } = movers[dir](board);
       if (!moved) return;
 
+      // remember previous state for undo (max 3)
       setHistory((h) => [{ board: board.map((r) => [...r]), score, won, over }, ...h].slice(0, 3));
-      setAnimMoves(moves);
-      window.setTimeout(() => setAnimMoves(null), 180);
+
+      // animate ghost tiles
+      if (moves && moves.length) {
+        setAnimMoves(moves);
+        window.setTimeout(() => setAnimMoves(null), 180);
+      }
 
       let nb = movedBoard;
       const ns = score + gained;
@@ -149,23 +189,18 @@ export function useGame(playerId: string) {
       setLastSpawn(spawned.pos);
       setLastDir(dir);
 
-      const nextBest = Math.max(best, ns);
-      if (nextBest !== best) setBest(nextBest);
+      if (ns > best) setBest(ns);
 
-      if (!won && maxTile(nb) >= TARGET) setWon(true);
+      const maxV = maxTile(nb);
+      if (!won && maxV >= TARGET) setWon(true);
       if (!hasMoves(nb)) setOver(true);
 
-      persistAll({
-        board: nb,
-        score: ns,
-        best: nextBest,
-        lastSpawn: spawned.pos,
-      });
+      persistAll({ board: nb, score: ns, best: Math.max(best, ns), lastSpawn: spawned.pos, won, over });
     },
     [board, score, best, won, over, persistAll]
   );
 
-  /** Start a brand new board but keep player's best */
+  /** New game (for current player only) */
   const newGame = useCallback(() => {
     let b = createEmptyBoard(BOARD_SIZE);
     b = addRandomTile(b).board;
@@ -177,25 +212,23 @@ export function useGame(playerId: string) {
     setOver(false);
     setHistory([]);
     setLastDir(null);
+    setAnimMoves(null);
     persistAll({
       board: b2.board,
       score: 0,
+      lastSpawn: b2.pos,
       won: false,
       over: false,
-      lastSpawn: b2.pos,
-      history: [],
     });
   }, [persistAll]);
 
-  /** Continue playing after reaching TARGET (remove win overlay) */
+  /** Continue after 2048 */
   const continueGame = useCallback(() => {
-    if (won) {
-      setWon(false);
-      persistAll({ won: false });
-    }
-  }, [won, persistAll]);
+    setWon(false);
+    persistAll({ won: false });
+  }, [persistAll]);
 
-  /** Undo one step (max 3 steps kept) */
+  /** Undo */
   const undo = useCallback(() => {
     setHistory((h) => {
       if (h.length === 0) return h;
@@ -206,6 +239,7 @@ export function useGame(playerId: string) {
       setOver(prev.over);
       setLastSpawn(null);
       setLastDir(null);
+      setAnimMoves(null);
       persistAll({
         board: prev.board,
         score: prev.score,
@@ -239,35 +273,37 @@ export function useGame(playerId: string) {
           /* ignore */
         }
       }
+      // reset global key
+      localStorage.setItem(GLOBAL_BEST_KEY, '0');
+
       setBest(0);
-      setBestGlobal(computeGlobalBest());
+      setBestGlobal(0);
       persistAll({ best: 0 });
     },
-    [persistAll, computeGlobalBest]
+    [persistAll]
   );
 
-  /** Arrows-only keyboard control (WASD disabled so input fields work) */
+  const toggleTheme = useCallback(() => setIsDark((v) => !v), []);
+  const canUndo = history.length > 0;
+
+  // Keyboard (arrows only)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (k === 'arrowleft' || k === 'arrowright' || k === 'arrowup' || k === 'arrowdown') {
+      if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) {
         e.preventDefault();
-        const map: Record<string, Direction> = {
+        const dirMap: Record<string, Direction> = {
           arrowleft: 'left',
           arrowright: 'right',
           arrowup: 'up',
           arrowdown: 'down',
         };
-        applyMove(map[k]);
+        applyMove(dirMap[k]);
       }
     };
-    const opts: AddEventListenerOptions = { passive: false };
-    window.addEventListener('keydown', onKey, opts);
-    return () => window.removeEventListener('keydown', onKey, opts);
+    window.addEventListener('keydown', onKey, { passive: false } as unknown as AddEventListenerOptions);
+    return () => window.removeEventListener('keydown', onKey as any);
   }, [applyMove]);
-
-  const toggleTheme = useCallback(() => setIsDark((v) => !v), []);
-  const canUndo = history.length > 0;
 
   return {
     board,
@@ -279,14 +315,12 @@ export function useGame(playerId: string) {
     lastSpawn,
     lastDir,
     isDark,
-
     applyMove,
     newGame,
     continueGame,
     undo,
     resetBest,
     toggleTheme,
-
     canUndo,
     animMoves,
   };
