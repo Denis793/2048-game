@@ -25,7 +25,7 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition;
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold transition;
   }
 
   .btn-primary {
@@ -59,9 +59,8 @@
     }
     /* Lift the whole app on mobile and avoid bottom gesture bar */
     .game-container {
-      justify-content: flex-start; /* override justify-center on mobile */
       margin-top: 0.5rem;
-      margin-bottom: 4.5rem; /* more space for swipe area */
+      margin-bottom: 4.5rem;
       padding-bottom: env(safe-area-inset-bottom, 16px);
     }
   }
@@ -83,7 +82,7 @@
     position: relative;
     width: calc(4 * var(--tile) + 3 * var(--gap));
     height: calc(4 * var(--tile) + 3 * var(--gap));
-    touch-action: none; /* prevent page scroll while swiping */
+    touch-action: none;
   }
 
   /* On small screens the stage fills most of the width,

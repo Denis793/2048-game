@@ -65,7 +65,7 @@ export function HomePage() {
 
           {/* Controls row */}
           <div className="w-full mb-4">
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <div className="grid grid-cols-2 gap-2">
               <PlayerMenu
                 players={players}
                 currentId={currentId}
@@ -102,8 +102,8 @@ export function HomePage() {
 
           {/* Bottom counters & actions */}
           <div className="w-full my-14">
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div className="grid grid-cols-2 gap-2 sm:flex">
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <Counter label="SCORE" value={game.score} />
                 <Counter label="BEST" value={game.bestGlobal} />
                 <Controls.ResetBest className="py-7" onClick={game.resetBest} />
