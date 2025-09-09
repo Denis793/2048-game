@@ -24,7 +24,13 @@ export const tileClasses = (v: number) => {
       ? 'bg-[#edc850]'
       : v === 1024
       ? 'bg-[#edc53f]'
-      : 'bg-[#edc22e]';
+      : v === 2048
+      ? 'bg-[#edc22e]'
+      : v === 4096
+      ? 'bg-violet-600'
+      : v === 8192
+      ? 'bg-blue-600'
+      : 'bg-red-600';
 
   return `${base} ${bg}`;
 };
