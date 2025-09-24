@@ -239,7 +239,7 @@ export function GameBoard(props: {
                bg-white/80 dark:bg-black/40 backdrop-blur-[2px]"
         >
           <div className="text-center">
-            <div className="text-3xl font-black mb-2">
+            <div className="text-3xl font-black text-white mb-2">
               {won ? `${playerName ?? 'Player'} wins!` : `${playerName ?? 'Player'} lost`}
             </div>
             <div className="text-sm text-neutral-700 dark:text-neutral-200 mb-3">
