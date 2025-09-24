@@ -18,7 +18,7 @@ Supports multiple players, persistent saves, animations, responsive design, them
 ## 🖼️ Screenshot
 
 <div align="center">
-  <img src="https://github.com/Denis793/2048-game/blob/main/public/img/Screen.png" alt="View click" height="auto" width="100%">
+  <img src="https://github.com/Denis793/2048-game/blob/main/public/img/screens/Screenshot-1-2048.png" alt="View click" height="auto" width="100%">
 </div>
 
 ---
